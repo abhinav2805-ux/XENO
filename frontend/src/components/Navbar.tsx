@@ -1,52 +1,49 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Navbar() {
   const { data: session, status } = useSession();
-  const isLoggedIn = status === 'authenticated';
 
   return (
-    <nav className="bg-gray-900 text-white px-6 py-3 flex justify-between items-center shadow">
-      <Link href="/" className="text-xl font-bold hover:text-blue-400">
-        Xeno CRM
-      </Link>
-
-      <div className="flex items-center gap-6">
-        <Link href="/" className="hover:text-blue-400">
-          Home
-        </Link>
-
-        {isLoggedIn && (
-          <>
-            <Link href="/dashboard" className="hover:text-blue-400">
-              Dashboard
+    <nav className="bg-white shadow-lg">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Link href="/" className="text-xl font-bold">
+              Xeno CRM
             </Link>
-            <Link href="/campaigns" className="hover:text-blue-400">
-              Campaigns
-            </Link>
-            <Link href="/upload" className="hover:text-blue-400">
-              Upload
-            </Link>
-          </>
-        )}
-
-        {isLoggedIn ? (
-          <button
-            onClick={() => signOut()}
-            className="bg-red-600 px-3 py-1 rounded hover:bg-red-500 transition"
-          >
-            Logout
-          </button>
-        ) : (
-          <button
-            onClick={() => signIn('google')}
-            className="bg-blue-600 px-3 py-1 rounded hover:bg-blue-500 transition"
-          >
-            Login with Google
-          </button>
-        )}
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            {session ? (
+              <>
+                <Link href="/dashboard" className="text-gray-700 hover:text-gray-900">
+                  Dashboard
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/signin" className="text-gray-700 hover:text-gray-900">
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </nav>
   );
