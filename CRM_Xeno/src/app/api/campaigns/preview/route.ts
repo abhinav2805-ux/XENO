@@ -13,21 +13,10 @@ export async function GET(req: NextRequest) {
   const filterField = searchParams.get('filterField');
   const filterValue = searchParams.get('filterValue');
 
+  // Only show customers for this campaign
   const query: any = { campaignId };
   if (filterField && filterValue) query[filterField] = filterValue;
 
   const data = await Customer.find(query).limit(100);
   return NextResponse.json(data);
 }
-
-// Upload CSV
-fetch('/api/campaigns/upload-csv', {
-    method: 'POST',
-    body: yourFormData, // FormData object
-    headers: {
-      Authorization: `Bearer ${token}`, // optional
-    },
-  });
-  
-  // Preview audience
-  fetch('/api/campaigns/preview?campaignId=12345');
