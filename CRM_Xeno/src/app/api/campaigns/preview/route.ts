@@ -31,4 +31,3 @@ fetch('/api/campaigns/upload-csv', {
   
   // Preview audience
   fetch('/api/campaigns/preview?campaignId=12345');
-  

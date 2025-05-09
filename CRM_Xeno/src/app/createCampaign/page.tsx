@@ -1,33 +1,71 @@
 'use client';
 import { useState } from 'react';
 
-export default function CreateCampaign({ campaignId }: { campaignId: string }) {
+export default function CreateCampaign() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<any[]>([]);
   const [message, setMessage] = useState('');
+  const [campaignId, setCampaignId] = useState<string>('');
+  const [campaignName, setCampaignName] = useState('');
+  const [campaignDesc, setCampaignDesc] = useState('');
+  const [step, setStep] = useState<'details' | 'upload'>('details');
 
+  // Step 1: Create campaign
+  const handleCreateCampaign = async () => {
+    if (!campaignName) {
+      setMessage('Please enter a campaign name.');
+      return;
+    }
+    setMessage('');
+    const res = await fetch('/api/campaigns/create', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: campaignName, description: campaignDesc }),
+  credentials: 'include', // <-- Add this line
+});
+    const data = await res.json();
+    if (res.ok && data.campaign?._id) {
+      setCampaignId(data.campaign._id);
+      setStep('upload');
+      setMessage('Campaign created! Now upload your CSV.');
+    } else {
+      setMessage(data.message || 'Failed to create campaign');
+    }
+  };
+
+  // Step 2: Upload CSV
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) setFile(e.target.files[0]);
   };
 
   const handleUpload = async () => {
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('campaignId', campaignId);
+  if (!file || !campaignId) return;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('campaignId', campaignId);
 
-    const res = await fetch('http://localhost:5000/api/campaigns/upload-csv', {
+  try {
+    const res = await fetch('/api/campaigns/upload-csv', {
       method: 'POST',
       body: formData,
       credentials: 'include'
     });
-    const data = await res.json();
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      data = { message: 'Unknown error (invalid JSON response)' };
+    }
     setMessage(data.message);
-    fetchPreview();
-  };
+    if (res.ok) fetchPreview();
+  } catch (err) {
+    setMessage('Network error');
+  }
+};
 
   const fetchPreview = async () => {
-    const res = await fetch(`http://localhost:5000/api/campaigns/preview?campaignId=${campaignId}`);
+    if (!campaignId) return;
+    const res = await fetch(`/api/campaigns/preview?campaignId=${campaignId}`);
     const data = await res.json();
     setPreview(data);
   };
@@ -35,25 +73,52 @@ export default function CreateCampaign({ campaignId }: { campaignId: string }) {
   return (
     <div className="max-w-2xl mx-auto p-6 bg-gray-50 rounded-lg shadow mt-8">
       <h1 className="text-2xl font-bold mb-6 text-blue-700">Create Campaign</h1>
-      <div className="mb-4">
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleFileChange}
-          className="block w-full text-sm text-gray-500
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-full file:border-0
-            file:text-sm file:font-semibold
-            file:bg-blue-50 file:text-blue-700
-            hover:file:bg-blue-100"
-        />
-      </div>
-      <button
-        onClick={handleUpload}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded shadow mb-4 transition-colors"
-      >
-        Upload CSV
-      </button>
+      {step === 'details' && (
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Campaign Name"
+            value={campaignName}
+            onChange={e => setCampaignName(e.target.value)}
+            className="w-full border px-3 py-2 rounded mb-3"
+          />
+          <textarea
+            placeholder="Campaign Description (optional)"
+            value={campaignDesc}
+            onChange={e => setCampaignDesc(e.target.value)}
+            className="w-full border px-3 py-2 rounded mb-3"
+          />
+          <button
+            onClick={handleCreateCampaign}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded shadow"
+          >
+            Create Campaign
+          </button>
+        </div>
+      )}
+      {step === 'upload' && (
+        <>
+          <div className="mb-4">
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileChange}
+              className="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-full file:border-0
+                file:text-sm file:font-semibold
+                file:bg-blue-50 file:text-blue-700
+                hover:file:bg-blue-100"
+            />
+          </div>
+          <button
+            onClick={handleUpload}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded shadow mb-4 transition-colors"
+          >
+            Upload CSV
+          </button>
+        </>
+      )}
       {message && (
         <div className="mb-4 p-3 rounded bg-green-100 text-green-800 border border-green-300">
           {message}

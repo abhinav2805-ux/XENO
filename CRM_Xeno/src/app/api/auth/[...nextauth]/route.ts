@@ -56,12 +56,12 @@ export const authOptions = {
     newUser: "/dashboard",
   },
   callbacks: {
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub;
-      }
-      return session;
-    },
+   async session({ session, token }) {
+    if (session.user && token.sub) {
+      session.user.id = token.sub;
+    }
+    return session;
+  },
    async redirect({ url, baseUrl }) {
     // If url is relative, allow it, otherwise fallback to dashboard
     if (url.startsWith("/")) return url;

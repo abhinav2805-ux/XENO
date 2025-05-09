@@ -1,5 +1,7 @@
 import { MongoClient } from 'mongodb';
+import mongoose from 'mongoose';
 
+// --- MongoClient for NextAuth Adapter ---
 const uri = process.env.MONGODB_URI as string;
 const options = {};
 
@@ -23,3 +25,12 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export default clientPromise;
+
+// --- Mongoose dbConnect for Models ---
+export async function dbConnect() {
+  if (mongoose.connection.readyState >= 1) return;
+  return mongoose.connect(uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  } as any);
+}
