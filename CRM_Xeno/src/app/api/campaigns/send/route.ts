@@ -6,7 +6,7 @@ import { getToken } from 'next-auth/jwt';
 import { v4 as uuidv4 } from 'uuid';
 
 function simulateVendorAPI() {
-  return Math.random() < 0.9 ? "SENT" : "FAILED";
+  return Math.random() < 0.8 ? "SENT" : "FAILED";
 }
 
 export async function POST(req: NextRequest) {

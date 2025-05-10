@@ -5,31 +5,44 @@ import Link from "next/link";
 export default function Dashboard() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
-
+  const [isLoading, setIsLoading] = useState(true);
+ 
   useEffect(() => {
-    fetch('/api/campaigns/history')
-      .then(res => res.json())
-      .then(data => setCampaigns(data.campaigns || []));
-    fetch('/api/stats')
-      .then(res => res.json())
-      .then(data => setStats(data));
+    Promise.all([
+      fetch('/api/campaigns/history').then(res => res.json()),
+      fetch('/api/stats').then(res => res.json())
+    ])
+    .then(([campaignData, statsData]) => {
+      setCampaigns(campaignData.campaigns || []);
+      setStats(statsData);
+    })
+    .catch(error => console.error('Dashboard loading error:', error))
+    .finally(() => setIsLoading(false));
   }, []);
-
+ const formatNumber = (num: number) => {
+    return new Intl.NumberFormat().format(num);
+  };
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6 text-blue-700">Dashboard</h1>
       <div className="mb-6 flex gap-6">
         <div className="bg-white rounded shadow p-4 flex-1">
           <div className="text-gray-500">Total Campaigns</div>
-          <div className="text-2xl font-bold">{stats?.totalCampaigns ?? '-'}</div>
+          <div className="text-2xl font-bold">
+            {isLoading ? '...' : formatNumber(stats?.totalCampaigns ?? 0)}
+          </div>
         </div>
         <div className="bg-white rounded shadow p-4 flex-1">
           <div className="text-gray-500">Total Customers</div>
-          <div className="text-2xl font-bold">{stats?.totalCustomers ?? '-'}</div>
+          <div className="text-2xl font-bold">
+            {isLoading ? '...' : formatNumber(stats?.totalCustomers ?? 0)}
+          </div>
         </div>
         <div className="bg-white rounded shadow p-4 flex-1">
           <div className="text-gray-500">Last Campaign Delivery Rate</div>
-          <div className="text-2xl font-bold">{stats?.lastDeliveryRate ?? '-'}</div>
+          <div className="text-2xl font-bold">
+            {isLoading ? '...' : stats?.lastDeliveryRate ?? '0%'}
+          </div>
         </div>
       </div>
       <div className="flex justify-end mb-4">
