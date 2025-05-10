@@ -13,7 +13,6 @@ import 'react-querybuilder/dist/query-builder.css';
 
 // Update the defaultFields with more options
 const defaultFields: Field[] = [
-  { name: 'total_purchase', label: 'Total Purchase', inputType: 'number' },
   { name: 'visits', label: 'Number of Visits', inputType: 'number' },
   { name: 'inactive_days', label: 'Days Since Last Visit', inputType: 'number' },
   { name: 'email', label: 'Email', inputType: 'text' },
@@ -111,6 +110,10 @@ const CustomRemoveButton: React.FC<any> = ({ handleOnClick }) => (
 );
 
 export default function CreateCampaign() {
+  const [useAiMessage, setUseAiMessage] = useState(false);
+const [aiGeneratedMessage, setAiGeneratedMessage] = useState('');
+const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
+const [userMessagePrompt, setUserMessagePrompt] = useState('');
   const [activeStep, setActiveStep] = useState(1);
   const [campaignName, setCampaignName] = useState('');
   const [campaignDesc, setCampaignDesc] = useState('');
@@ -223,6 +226,84 @@ export default function CreateCampaign() {
       setIsLoading(false);
     }
   };
+
+// Add this function to handle AI message generation
+const generateAiMessage = async () => {
+  setIsGeneratingMessage(true);
+  try {
+    const res = await fetch('/api/llm/suggest-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        campaignName,
+        description: campaignDesc,
+        audience: `${preview.length} customers from CSV upload`,
+        userMessage: userMessagePrompt // Add user's rough message
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      setAiGeneratedMessage(data.message);
+      setCustomMessage(data.message); // Automatically update the preview
+    } else {
+      toast.error('Failed to generate message');
+    }
+  } catch (error) {
+    toast.error('Error generating message');
+  } finally {
+    setIsGeneratingMessage(false);
+  }
+};
+
+// Add this function to handle natural language filter conversion
+const handlePromptToFilter = async () => {
+  if (!promptText.trim()) {
+    toast.warning('Please enter a filter description');
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    // First generate the filter
+    const filterRes = await fetch('/api/llm/generate-filter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: promptText,
+        availableFields: fields
+      })
+    });
+
+    const filterData = await filterRes.json();
+    
+    if (!filterRes.ok) {
+      throw new Error(filterData.error || 'Failed to generate filter');
+    }
+
+    if (filterData.query) {
+      setQuery(filterData.query);
+      setShowPromptInput(false);
+
+      // Immediately fetch preview with the new query
+      const previewRes = await fetch(`/api/campaigns/preview?rules=${encodeURIComponent(JSON.stringify(filterData.query))}&csvImportId=${csvImportId}`);
+      const previewData = await previewRes.json();
+      
+      if (previewRes.ok) {
+        const resultData = previewData.data || [];
+        setFilteredPreview(resultData);
+        toast.success(`Filter applied! Found ${resultData.length} matching customers.`);
+      } else {
+        toast.error(previewData.message || 'Error fetching preview');
+      }
+    }
+  } catch (error: any) {
+    console.error('Filter generation error:', error);
+    toast.error(error.message || 'Error generating filter');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const fetchPreview = async () => {
   if (!csvImportId) {
@@ -486,7 +567,7 @@ const renderCsvTable = (data: any[]) => {
         <div className="mt-6">
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 flex items-start">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 000 2v3a1 1 001 1h1a1 1 100-2h-1V9a1 1 00-1-1z" clipRule="evenodd" />
             </svg>
             <div className="text-sm text-yellow-800">
               <p className="font-medium">No matches found</p>
@@ -577,29 +658,91 @@ const renderCsvTable = (data: any[]) => {
                 className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors h-24"
               />
             </div>
-            <div>
-              <label htmlFor="customMessage" className="block text-sm font-medium text-gray-700 mb-1">Message Template *</label>
-              <div className="mb-2 text-sm text-gray-500">
-                Use <code className="bg-gray-200 px-1 py-0.5 rounded">&#123;&#123;name&#125;&#125;</code> for personalization.
-              </div>
-              <textarea
-                id="customMessage"
-                placeholder="Hi {{name}}, here's 10% off on your next order!"
-                value={customMessage}
-                onChange={e => setCustomMessage(e.target.value)}
-                className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                rows={4}
-                required
-              />
-              {customMessage && (
-                <div className="mt-4 p-4 bg-white border rounded-md">
-                  <div className="text-sm font-medium text-gray-500 mb-2">Preview:</div>
-                  <div className="text-gray-800 whitespace-pre-wrap">
-                    {customMessage.replace(/\{\{name\}\}/g, 'John Doe')}
-                  </div>
+            {/* Message Template Section */}
+<div>
+  <div className="flex justify-between items-center mb-4">
+    <label htmlFor="customMessage" className="block text-sm font-medium text-gray-700">
+      Message Template *
+    </label>
+    <div className="flex items-center space-x-2">
+      <span className="text-sm text-gray-600">AI Assisted</span>
+      <button
+        type="button"
+        onClick={() => setUseAiMessage(!useAiMessage)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+          useAiMessage ? 'bg-blue-600' : 'bg-gray-200'
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            useAiMessage ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </div>
+  </div>
+
+  {useAiMessage ? (
+    <div className="space-y-4">
+      <textarea
+        value={userMessagePrompt}
+        onChange={(e) => setUserMessagePrompt(e.target.value)}
+        placeholder="Write your rough message here. AI will enhance it..."
+        className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+        rows={3}
+      />
+      <button
+        onClick={generateAiMessage}
+        disabled={isGeneratingMessage || !userMessagePrompt.trim()}
+        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-300"
+      >
+        {isGeneratingMessage ? 'Enhancing...' : 'Enhance Message'}
+      </button>
+      
+      {aiGeneratedMessage && (
+        <>
+          <div className="p-4 bg-gray-50 rounded-md">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Enhanced Message:</h4>
+            <textarea
+              value={aiGeneratedMessage}
+              onChange={(e) => {
+                setAiGeneratedMessage(e.target.value);
+                setCustomMessage(e.target.value); // Update customMessage as well
+              }}
+              className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              rows={4}
+            />
+            <button
+              onClick={() => setCustomMessage(aiGeneratedMessage)}
+              className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+            >
+              Use This Message
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  ) : (
+    <textarea
+      id="customMessage"
+      placeholder="Hi {{name}}, here's 10% off on your next order!"
+      value={customMessage}
+      onChange={e => setCustomMessage(e.target.value)}
+      className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+      rows={4}
+      required
+    />
+  )}
+</div>
+
+            {customMessage && (
+              <div className="mt-4 p-4 bg-white border rounded-md">
+                <div className="text-sm font-medium text-gray-500 mb-2">Preview:</div>
+                <div className="text-gray-800 whitespace-pre-wrap">
+                  {customMessage.replace(/\{\{name\}\}/g, 'John Doe')}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
         
@@ -682,7 +825,7 @@ const renderCsvTable = (data: any[]) => {
                   className="text-blue-600 hover:text-blue-700 flex items-center"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0 1 1 0 012 0zm-1 3a1 1 0 00-1 1v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2v-2a1 1 0 00-1-1z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0 1 1 0 012 0zm-1 3a1 1 00-1 1v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2v-2a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                   {showPromptInput ? 'Use Rule Builder' : 'Use Natural Language'}
                 </button>
