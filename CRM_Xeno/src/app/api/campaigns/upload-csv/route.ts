@@ -20,33 +20,45 @@ export async function POST(req: NextRequest) {
       header: true, 
       skipEmptyLines: true,
       dynamicTyping: true,
-      transformHeader: header => header.trim(),
+      transformHeader: header => header.trim().toLowerCase(), // Convert headers to lowercase
     });
-
-    if (parsed.errors.length > 0) {
-      return NextResponse.json({ message: 'CSV parse error', errors: parsed.errors }, { status: 400 });
-    }
 
     const csvImportId = new Types.ObjectId();
 
-    try {
-      // Prepare the data
-      const results = parsed.data.map((row: any) => ({
-        ...row,
+    // Map CSV fields to customer fields
+    const results = parsed.data.map((row: any) => {
+      // Try to find the name from various possible CSV column names
+      const name = row.name || 
+                  row.full_name || 
+                  row.fullname || 
+                  row.customer_name || 
+                  (row.first_name && row.last_name ? `${row.first_name} ${row.last_name}` : '') ||
+                  (row.firstname && row.lastname ? `${row.firstname} ${row.lastname}` : '');
+
+      return {
         userId: new Types.ObjectId(token.sub ?? token.id),
-        csvImportId
-      }));
+        csvImportId,
+        name: name || undefined,
+        firstName: row.first_name || row.firstname || undefined,
+        lastName: row.last_name || row.lastname || undefined,
+        email: row.email || undefined,
+        phone: row.phone || row.phone_number || row.contact || undefined,
+        // Keep original data as well
+        ...row
+      };
+    });
 
-      // Insert new data without ordered option
+    try {
       await Customer.insertMany(results);
-
-      // Fetch preview
+      
       const inserted = await Customer.find({ 
         userId: new Types.ObjectId(token.sub ?? token.id),
         csvImportId 
       })
       .limit(100)
       .lean();
+
+      console.log('Sample customer data:', inserted[0]); // Debug log
 
       return NextResponse.json({ 
         message: 'CSV uploaded and data saved', 

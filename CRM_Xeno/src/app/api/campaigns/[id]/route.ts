@@ -9,7 +9,6 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     if (!token) return NextResponse.json({}, { status: 401 });
 
-    // Await context.params as required by Next.js 13+
     const params = await context.params;
     const { id } = params;
 
@@ -19,15 +18,31 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
     })
     .populate({
       path: 'customers',
-      select: '-__v' // Exclude version field
+      model: 'Customer',
+      select: 'name email phone firstName lastName fullName customer_name', // Specify fields
+      options: { 
+        virtuals: true,
+        lean: true 
+      }
     })
-    .lean();
+    .lean({ virtuals: true });
 
     if (!campaign) {
       return NextResponse.json({ message: 'Campaign not found' }, { status: 404 });
     }
 
-    // Add audience size to the response
+    // Transform customer data to include displayName
+    if (campaign.customers) {
+      campaign.customers = campaign.customers.map((customer: any) => ({
+        ...customer,
+        displayName: customer.name || 
+                    customer.fullName || 
+                    (customer.firstName && customer.lastName ? `${customer.firstName} ${customer.lastName}` : null) ||
+                    customer.customer_name ||
+                    'N/A'
+      }));
+    }
+
     campaign.audienceSize = campaign.customers?.length || 0;
 
     return NextResponse.json({ campaign });

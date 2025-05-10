@@ -8,7 +8,7 @@ export default function CampaignDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchCampaign = async () => {
       try {
         const res = await fetch(`/api/campaigns/${params.id}`);
@@ -16,8 +16,13 @@ export default function CampaignDetail() {
         
         if (!res.ok) throw new Error(data.message || 'Failed to fetch campaign');
         
+        // Add debug logging
+        console.log('Campaign data:', data.campaign);
+        console.log('Customers:', data.campaign.customers);
+        
         setCampaign(data.campaign);
       } catch (err: any) {
+        console.error('Error fetching campaign:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -56,13 +61,36 @@ export default function CampaignDetail() {
               </tr>
             </thead>
             <tbody>
-              {campaign.customers?.map((customer: any) => (
-                <tr key={customer._id}>
-                  <td className="px-4 py-2 border-b">{customer.name}</td>
-                  <td className="px-4 py-2 border-b">{customer.email}</td>
-                  <td className="px-4 py-2 border-b">{customer.phone}</td>
+              {campaign.customers?.map((customer: any) => {
+                // Try to get the best name possible
+                const displayName = 
+                  customer.name ||
+                  customer.fullName ||
+                  customer.full_name ||
+                  (customer.firstName && customer.lastName 
+                    ? `${customer.firstName} ${customer.lastName}`
+                    : '') ||
+                  (customer.first_name && customer.last_name 
+                    ? `${customer.first_name} ${customer.last_name}`
+                    : '') ||
+                  customer.customer_name ||
+                  'N/A';
+
+                return (
+                  <tr key={customer._id}>
+                    <td className="px-4 py-2 border-b">{displayName}</td>
+                    <td className="px-4 py-2 border-b">{customer.email || 'N/A'}</td>
+                    <td className="px-4 py-2 border-b">{customer.phone || 'N/A'}</td>
+                  </tr>
+                );
+              })}
+              {(!campaign.customers || campaign.customers.length === 0) && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-2 text-center text-gray-500">
+                    No customers found
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
