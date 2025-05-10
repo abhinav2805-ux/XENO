@@ -1,53 +1,33 @@
 import mongoose from 'mongoose';
 
 const customerSchema = new mongoose.Schema({
-  // Core fields that should always exist
   userId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
     required: true,
-    index: true
+    index: true 
+  },
+  csvImportId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    required: true,
+    index: true 
   },
   campaignId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Campaign', 
-    required: true,
-    index: true
+    ref: 'Campaign',
+    required: false
   },
-  
-  // Common fields with specific types, but not required
-  email: { 
-    type: String, 
-    trim: true,
-    lowercase: true,
-    index: true
-  },
-  name: { type: String, trim: true },
-  phone: { type: String, trim: true },
-  
-  // All other fields will be dynamically added thanks to strict: false
+  name: String,
+  email: String,
+  phone: String,
 }, { 
-  timestamps: true, 
   strict: false,
-  
-  // This adds virtual getters to JSON responses
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  timestamps: true 
 });
 
-// Compound unique index: email+campaignId
-// This prevents duplicate emails within the same campaign 
-// but allows the same email in different campaigns
-customerSchema.index({ email: 1, campaignId: 1 }, { unique: true, sparse: true });
+// Only index userId and csvImportId for better query performance
+customerSchema.index({ userId: 1, csvImportId: 1 });
 
-// Pre-save middleware to ensure email is lowercase
-customerSchema.pre('save', function(next) {
-  if (this.email) {
-    this.email = this.email.toLowerCase();
-  }
-  next();
-});
+// Clear existing models to prevent OverwriteModelError
+mongoose.models = {};
 
-const Customer = mongoose.models.Customer || mongoose.model('Customer', customerSchema);
-
-export default Customer;
+export default mongoose.model('Customer', customerSchema);

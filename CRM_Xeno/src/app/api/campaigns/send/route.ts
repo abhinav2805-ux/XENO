@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
+import Campaign from '@/models/Campaign';
 import CommunicationLog from '@/models/CommunicationLog';
 import { getToken } from 'next-auth/jwt';
 import { v4 as uuidv4 } from 'uuid';
-import Campaign from '@/models/Campaign';
+
 function simulateVendorAPI() {
   return Math.random() < 0.9 ? "SENT" : "FAILED";
 }
@@ -13,10 +14,22 @@ export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-  const { campaignId, customers, message } = await req.json();
+  const body = await req.json();
+  const { name, description, message, filters, preview ,csvImportId} = body;
 
-  const logs = customers.map((customer: any) => ({
-    campaignId,
+  const campaign = await Campaign.create({
+    name,
+    description,
+    userId: token.sub ?? token.id,
+    sentAt: new Date(),
+    message,
+    filters,
+    customers: preview.map((cust: any) => cust._id),
+    csvImportId,
+  });
+
+  const logs = preview.map((customer: any) => ({
+    campaignId: campaign._id,
     customerId: customer._id,
     userId: token.sub ?? token.id,
     status: simulateVendorAPI(),
@@ -27,18 +40,5 @@ export async function POST(req: NextRequest) {
 
   await CommunicationLog.insertMany(logs);
 
-// Save filters, preview, and message to the campaign
-await Campaign.findByIdAndUpdate(
-  campaignId,
-  {
-    $set: {
-      filters, // Pass filters from frontend
-      preview: customers,        // Save previewed audience
-      message,                   // Save the message sent
-      sentAt: new Date()
-    }
-  }
-);
-
-  return NextResponse.json({ message: 'Campaign sent', results: logs });
+  return NextResponse.json({ message: 'Campaign sent', campaign, results: logs });
 }
