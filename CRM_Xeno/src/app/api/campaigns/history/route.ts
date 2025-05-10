@@ -9,28 +9,27 @@ export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ campaigns: [] });
 
-  // Get campaigns for this user, latest first
-  const campaigns = await Campaign.find({ userId: token.id }).sort({ createdAt: -1 }).lean();
+  // Get all campaigns for this user
+  const campaigns = await Campaign.find({ userId: token.sub ?? token.id }).sort({ createdAt: -1 }).lean();
 
-  // For each campaign, get delivery stats
+  // For each campaign, get stats
   const campaignIds = campaigns.map(c => c._id);
   const logs = await CommunicationLog.aggregate([
     { $match: { campaignId: { $in: campaignIds } } },
     { $group: {
-      _id: "$campaignId",
-      sent: { $sum: { $cond: [{ $eq: ["$status", "SENT"] }, 1, 0] } },
-      failed: { $sum: { $cond: [{ $eq: ["$status", "FAILED"] }, 1, 0] } },
+      _id: '$campaignId',
+      sent: { $sum: { $cond: [{ $eq: ['$status', 'SENT'] }, 1, 0] } },
+      failed: { $sum: { $cond: [{ $eq: ['$status', 'FAILED'] }, 1, 0] } },
       audienceSize: { $sum: 1 }
     }}
   ]);
-  const statsMap = Object.fromEntries(logs.map(l => [l._id.toString(), l]));
-
-  const result = campaigns.map(c => ({
+  const logMap = Object.fromEntries(logs.map(l => [l._id.toString(), l]));
+  const campaignsWithStats = campaigns.map(c => ({
     ...c,
-    sent: statsMap[c._id.toString()]?.sent || 0,
-    failed: statsMap[c._id.toString()]?.failed || 0,
-    audienceSize: statsMap[c._id.toString()]?.audienceSize || 0,
+    sent: logMap[c._id.toString()]?.sent ?? 0,
+    failed: logMap[c._id.toString()]?.failed ?? 0,
+    audienceSize: logMap[c._id.toString()]?.audienceSize ?? 0,
   }));
 
-  return NextResponse.json({ campaigns: result });
+  return NextResponse.json({ campaigns: campaignsWithStats });
 }

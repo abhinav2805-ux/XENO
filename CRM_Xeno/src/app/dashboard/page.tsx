@@ -33,11 +33,12 @@ export default function Dashboard() {
         </div>
       </div>
       <div className="flex justify-end mb-4">
-        <Link href="/createCampaign">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded shadow">
-            + Create New Campaign
-          </button>
-        </Link>
+       <Link
+  href="/createCampaign"
+  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded shadow inline-block"
+>
+  + Create New Campaign
+</Link>
       </div>
       <h2 className="text-xl font-semibold mb-2">Past Campaigns</h2>
       <div className="overflow-x-auto rounded border">

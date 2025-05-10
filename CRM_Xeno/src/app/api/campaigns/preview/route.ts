@@ -4,6 +4,36 @@ import Customer from '@/models/Customer';
 import { getToken } from 'next-auth/jwt';
 import { Types } from 'mongoose';
 
+function buildMongoQueryFromRules(rules: any, campaignId: string, userId: string) {
+  // Recursively convert rules to MongoDB query
+  if (!rules) return { campaignId: new Types.ObjectId(campaignId), userId: new Types.ObjectId(userId) };
+  let base = { campaignId: new Types.ObjectId(campaignId), userId: new Types.ObjectId(userId) };
+  if (rules.rules && rules.rules.length > 0) {
+    base['$' + rules.combinator] = rules.rules.map((r: any) =>
+      r.rules
+        ? buildMongoQueryFromRules(r, campaignId, userId)
+        : { [r.field]: { [mongoOp(r.operator)]: parseValue(r.value) } }
+    );
+  }
+  return base;
+}
+function mongoOp(op: string) {
+  switch (op) {
+    case '=': return '$eq';
+    case '!=': return '$ne';
+    case '<': return '$lt';
+    case '<=': return '$lte';
+    case '>': return '$gt';
+    case '>=': return '$gte';
+    case 'contains': return '$regex';
+    default: return '$eq';
+  }
+}
+function parseValue(val: any) {
+  if (!isNaN(val)) return Number(val);
+  return val;
+}
+
 export async function GET(req: NextRequest) {
   try {
     await dbConnect();
@@ -12,47 +42,19 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const campaignId = searchParams.get('campaignId');
-    const filterField = searchParams.get('filterField');
-    const filterValue = searchParams.get('filterValue');
-
+    const rules = searchParams.get('rules');
     if (!campaignId || !Types.ObjectId.isValid(campaignId)) {
       return NextResponse.json({ message: 'Invalid or missing campaignId' }, { status: 400 });
     }
-
-    // Build the query
-    const query: any = { 
-      campaignId: new Types.ObjectId(campaignId),
-      userId: new Types.ObjectId(token.sub ?? token.id)
-    };
-
-    // Add filter if provided
-    if (filterField && filterValue) {
-      // Try to determine if the value should be treated as a number
-      const numericValue = Number(filterValue);
-      if (!isNaN(numericValue)) {
-        // Create a query that can match either string or number format
-        query[filterField] = { $in: [filterValue, numericValue] };
-      } else {
-        // Create case-insensitive regex search for string values
-        query[filterField] = { $regex: new RegExp(filterValue, 'i') };
-      }
+    let query = { campaignId: new Types.ObjectId(campaignId), userId: new Types.ObjectId(token.sub ?? token.id) };
+    if (rules) {
+      try {
+        const parsedRules = JSON.parse(rules);
+        query = buildMongoQueryFromRules(parsedRules, campaignId, token.sub ?? token.id);
+      } catch {}
     }
-
-    // Fetch the data
-    const data = await Customer.find(query)
-      .limit(100)
-      .lean(); // Use lean for better performance
-
-    // Get available fields for the UI (from the first document)
-    const sample = await Customer.findOne({ campaignId: new Types.ObjectId(campaignId) }).lean();
-    const availableFields = sample ? Object.keys(sample).filter(key => 
-      !['_id', '__v', 'userId', 'createdAt', 'updatedAt'].includes(key)
-    ) : [];
-
-    return NextResponse.json({
-      data,
-      availableFields
-    });
+    const data = await Customer.find(query).limit(100).lean();
+    return NextResponse.json({ data });
   } catch (err: any) {
     console.error('Error in preview endpoint:', err);
     return NextResponse.json({ 
