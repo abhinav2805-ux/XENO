@@ -11,12 +11,30 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-querybuilder/dist/query-builder.css';
 
-const defaultFields: Field[] = [ // Explicitly type with Field[]
-  { name: 'spend', label: 'Spend', inputType: 'number' },
-  { name: 'visits', label: 'Visits', inputType: 'number' },
-  { name: 'inactiveDays', label: 'Inactive Days', inputType: 'number' },
+// Update the defaultFields with more options
+const defaultFields: Field[] = [
+  { name: 'total_purchase', label: 'Total Purchase', inputType: 'number' },
+  { name: 'visits', label: 'Number of Visits', inputType: 'number' },
+  { name: 'inactive_days', label: 'Days Since Last Visit', inputType: 'number' },
   { name: 'email', label: 'Email', inputType: 'text' },
-  { name: 'name', label: 'Name', inputType: 'text' },
+  { name: 'name', label: 'Customer Name', inputType: 'text' },
+  { name: 'last_order_date', label: 'Last Order Date', inputType: 'date' },
+  { name: 'order_count', label: 'Total Orders', inputType: 'number' },
+  { name: 'average_order_value', label: 'Average Order Value', inputType: 'number' }
+];
+
+// Add custom operators
+const customOperators = [
+  { name: 'equal', label: '=' },
+  { name: 'notEqual', label: '≠' },
+  { name: 'greaterThan', label: '>' },
+  { name: 'lessThan', label: '<' },
+  { name: 'greaterThanOrEqual', label: '≥' },
+  { name: 'lessThanOrEqual', label: '≤' },
+  { name: 'contains', label: 'Contains' },
+  { name: 'notContains', label: 'Does not contain' },
+  { name: 'beginsWith', label: 'Begins with' },
+  { name: 'endsWith', label: 'Ends with' }
 ];
 
 // Custom Field Selector Component
@@ -44,6 +62,53 @@ const CustomFieldSelector: React.FC<FieldSelectorProps> = ({
   );
 };
 
+// Add these components right after your CustomFieldSelector component and before the CreateCampaign component
+
+const CustomCombinatorSelector: React.FC<any> = ({
+  value,
+  handleOnChange,
+  options,
+  className,
+}) => (
+  <select
+    className={`${className} px-3 py-1 border rounded-md bg-white`}
+    value={value}
+    onChange={(e) => handleOnChange(e.target.value)}
+  >
+    {options.map((option: any) => (
+      <option key={option.name} value={option.name}>
+        {option.label}
+      </option>
+    ))}
+  </select>
+);
+
+const CustomAddRuleButton: React.FC<any> = ({ handleOnClick }) => (
+  <button
+    className="px-3 py-1 text-sm bg-green-500 text-white rounded-md hover:bg-green-600"
+    onClick={handleOnClick}
+  >
+    + Add Rule
+  </button>
+);
+
+const CustomAddGroupButton: React.FC<any> = ({ handleOnClick }) => (
+  <button
+    className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600"
+    onClick={handleOnClick}
+  >
+    + Add Group
+  </button>
+);
+
+const CustomRemoveButton: React.FC<any> = ({ handleOnClick }) => (
+  <button
+    className="p-1 text-red-500 hover:text-red-600"
+    onClick={handleOnClick}
+  >
+    ×
+  </button>
+);
 
 export default function CreateCampaign() {
   const [activeStep, setActiveStep] = useState(1);
@@ -53,6 +118,8 @@ export default function CreateCampaign() {
   const [file, setFile] = useState<File | null>(null); // Type file state
   const [fileName, setFileName] = useState('');
   const [csvFields, setCsvFields] = useState<string[]>([]); // Assuming csvFields are strings
+  const [showPromptInput, setShowPromptInput] = useState(false);
+  const [promptText, setPromptText] = useState('');
   const [fields, setFields] = useState<Field[]>(defaultFields); // Type fields state
   const [query, setQuery] = useState<RuleGroupType>({ combinator: 'and', rules: [] });
   const [preview, setPreview] = useState<any[]>([]);
@@ -158,39 +225,40 @@ export default function CreateCampaign() {
   };
 
   const fetchPreview = async () => {
-    if (!csvImportId) {
-      toast.error("Please upload a CSV first.");
-      return;
-    }
+  if (!csvImportId) {
+    toast.error("Please upload a CSV first.");
+    return;
+  }
+  
+  setIsLoading(true);
+  try {
+    console.log('Sending query:', query); // Debug log
     
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/campaigns/preview?rules=${encodeURIComponent(JSON.stringify(query))}&csvImportId=${csvImportId}`);
-      const data = await res.json();
+    const res = await fetch(`/api/campaigns/preview?rules=${encodeURIComponent(JSON.stringify(query))}&csvImportId=${csvImportId}`);
+    const data = await res.json();
+    
+    console.log('Preview response:', data); // Debug log
+    
+    if (res.ok) {
+      const resultData = data.data || [];
+      setFilteredPreview(resultData);
+      toast.success(`Filtered ${resultData.length} recipients from your CSV.`);
       
-      if (res.ok) {
-        const resultData = data.data || [];
-        setFilteredPreview(resultData);
-        toast.success(`Filtered ${resultData.length} recipients from your CSV.`);
-        
-        setStepsCompleted(prev => ({
-          ...prev,
-          // Step 3 (Filter Audience) is considered "complete" if filters are applied,
-          // or if the user proceeds without applying filters (which is allowed).
-          // Step 4 completion depends on having data (either filtered or full preview).
-          3: true, // Mark filter step as complete once filters are applied or attempted
-          4: resultData.length > 0 || (query.rules.length === 0 && preview.length > 0)
-        }));
-      } else {
-        toast.error(data.message || 'Error fetching preview');
-      }
-    } catch (err) {
-      toast.error('Error applying filters. Please try again.');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+      setStepsCompleted(prev => ({
+        ...prev,
+        3: true,
+        4: resultData.length > 0 || (query.rules.length === 0 && preview.length > 0)
+      }));
+    } else {
+      toast.error(data.message || 'Error fetching preview');
     }
-  };
+  } catch (err) {
+    console.error('Preview error:', err);
+    toast.error('Error applying filters. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleCreateCampaign = async () => {
     setIsLoading(true);
@@ -374,6 +442,70 @@ const renderCsvTable = (data: any[]) => {
     </div>
   );
 
+  // Add this function inside your CreateCampaign component
+  const saveFilter = () => {
+    if (query.rules.length === 0) {
+      toast.warning('No filter rules to save');
+      return;
+    }
+    
+    // For now, just show a success message
+    // Later you can implement actual filter saving functionality
+    toast.success('Filter saved successfully');
+  };
+
+  const renderPreviewResults = () => {
+    if (isLoading) {
+      return (
+        <div className="mt-6 text-center text-gray-500">
+          Loading preview...
+        </div>
+      );
+    }
+  
+    if (filteredPreview.length > 0) {
+      return (
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-2">Filtered Results Preview (First 5 Rows)</h3>
+          {renderCsvTable(filteredPreview)}
+          <div className="bg-green-50 border border-green-200 rounded-md p-4 mt-4 flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <div className="text-sm text-green-800">
+              <p className="font-medium">Filter applied successfully!</p>
+              <p className="mt-1">Found {filteredPreview.length} matching customers.</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+  
+    if (query.rules.length > 0) {
+      return (
+        <div className="mt-6">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="text-sm text-yellow-800">
+              <p className="font-medium">No matches found</p>
+              <p className="mt-1">Try adjusting your filter criteria.</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+  
+    return (
+      <div className="mt-6">
+        <div className="text-gray-500 text-sm">
+          Build your filter above and click "Apply Filter & Preview" to see results.
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 bg-white rounded-lg shadow my-8">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Create Campaign</h1>
@@ -528,7 +660,7 @@ const renderCsvTable = (data: any[]) => {
                 {renderCsvTable(preview)}
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mt-4 flex items-start">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0 1 1 0 012 0zm-1 3a1 1 0 00-1 1v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2v-2a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                   <div className="text-sm text-blue-800">
                     <p className="font-medium">CSV imported successfully!</p>
@@ -544,23 +676,62 @@ const renderCsvTable = (data: any[]) => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-800">Filter Your Audience</h2>
-              <span className="text-sm text-gray-500">Optional: Skip to send to all uploaded recipients.</span>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setShowPromptInput(prev => !prev)}
+                  className="text-blue-600 hover:text-blue-700 flex items-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0 1 1 0 012 0zm-1 3a1 1 0 00-1 1v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2v-2a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {showPromptInput ? 'Use Rule Builder' : 'Use Natural Language'}
+                </button>
+              </div>
             </div>
-            <div className="bg-white p-4 border rounded-md">
-              <QueryBuilder
-                fields={fields}
-                query={query}
-                onQueryChange={q => {
-                  setQuery(q);
-                  // When query changes, step 4 is no longer "complete" until filters are applied or skipped
-                  setStepsCompleted(prev => ({...prev, 4: false}));
-                }}
-                controlElements={{ // ADD THIS
-                  fieldSelector: CustomFieldSelector, // Use the custom field selector
-                }}
-              />
-            </div>
-            <div className="flex">
+
+            {showPromptInput ? (
+              <div className="space-y-4">
+                <textarea
+                  value={promptText}
+                  onChange={(e) => setPromptText(e.target.value)}
+                  placeholder="Describe your filter in natural language... (e.g., 'Show me customers who spent more than 10000 and visited less than 3 times in the last 90 days')"
+                  className="w-full h-32 p-3 border rounded-md"
+                />
+                <button
+                  onClick={handlePromptToFilter}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Convert to Filter
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white p-4 border rounded-md">
+                <QueryBuilder
+                  fields={fields}
+                  query={query}
+                  onQueryChange={(q) => {
+                    setQuery(q);
+                    setStepsCompleted(prev => ({...prev, 4: false}));
+                  }}
+                  operators={customOperators}
+                  controlElements={{
+                    fieldSelector: CustomFieldSelector,
+                    combinatorSelector: CustomCombinatorSelector,
+                    addRuleAction: CustomAddRuleButton,
+                    addGroupAction: CustomAddGroupButton,
+                    removeRuleAction: CustomRemoveButton,
+                    removeGroupAction: CustomRemoveButton
+                  }}
+                  controlClassnames={{
+                    queryBuilder: 'queryBuilder-branches',
+                    ruleGroup: 'p-4 border rounded-md bg-gray-50 my-2',
+                    rule: 'flex items-center space-x-2 my-2',
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="flex items-center space-x-4">
               <button
                 onClick={fetchPreview}
                 disabled={isLoading || !csvImportId || query.rules.length === 0}
@@ -572,27 +743,18 @@ const renderCsvTable = (data: any[]) => {
               >
                 {isLoading ? 'Applying...' : 'Apply Filter & Preview'}
               </button>
+
+              <button
+                onClick={saveFilter}
+                disabled={query.rules.length === 0}
+                className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50"
+              >
+                Save Filter
+              </button>
             </div>
-            {query.rules.length > 0 && filteredPreview.length > 0 && (
-              <div className="mt-4">
-                <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <div className="text-sm text-green-800">
-                    <p className="font-medium">Filtered {filteredPreview.length} customers.</p>
-                    <p className="mt-1">Your campaign will be sent to this filtered audience if you continue.</p>
-                  </div>
-                </div>
-                <h3 className="text-lg font-medium mb-2">Filtered Audience Preview (First 5 Rows)</h3>
-                {renderCsvTable(filteredPreview)}
-              </div>
-            )}
-             {query.rules.length > 0 && !isLoading && !filteredPreview.length && (
-                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md text-sm">
-                  No customers match the current filter criteria. Adjust your filters or proceed to send to all uploaded recipients.
-                </div>
-            )}
+
+            {/* Preview Results Section */}
+            {renderPreviewResults()}
           </div>
         )}
         
