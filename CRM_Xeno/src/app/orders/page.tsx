@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Upload } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -46,6 +47,7 @@ export default function OrdersPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [csvPreview, setCsvPreview] = useState<any[]>([]);
   const [prompt, setPrompt] = useState('');
+  const [UploadId, setUploadId] = useState('');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] || null);
@@ -69,6 +71,7 @@ export default function OrdersPage() {
       formData.append('file', file);
       const res = await fetch('/api/orders', { method: 'POST', body: formData });
       const data = await res.json();
+      setUploadId(data.uploadId); 
       if (!res.ok) throw new Error(data.message);
       setSuccess(`Orders uploaded! (${data.count} orders)`);
     } catch (err: any) {
@@ -86,7 +89,7 @@ export default function OrdersPage() {
       const res = await fetch('/api/llm/product-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt , uploadId:UploadId}),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Analysis failed');

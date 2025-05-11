@@ -3,6 +3,7 @@ import { getToken } from 'next-auth/jwt';
 import { dbConnect } from '@/lib/mongodb';
 import Order from '@/models/Order';
 import Papa from 'papaparse';
+import { randomUUID } from 'crypto';
 
 export async function POST(req: NextRequest) {
   await dbConnect();
@@ -30,11 +31,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'CSV parse error', errors }, { status: 400 });
   }
 
-  // Add userId to each order
+  // Generate a unique uploadId for this batch
+  const uploadId = randomUUID();
+
+  // Add userId and uploadId to each order
   const userId = token.sub ?? token.id;
   const orders = data.map((order: any) => ({
     ...order,
     userId,
+    uploadId, // <-- Add uploadId here
     orderDate: order.orderDate ? new Date(order.orderDate) : new Date(),
     amount: Number(order.amount),
     items: Array.isArray(order.items)
@@ -47,5 +52,5 @@ export async function POST(req: NextRequest) {
   // Insert into DB
   await Order.insertMany(orders, { ordered: false });
 
-  return NextResponse.json({ message: 'Orders ingested', count: orders.length });
+  return NextResponse.json({ message: 'Orders ingested', count: orders.length, uploadId }); // <-- Return uploadId
 }

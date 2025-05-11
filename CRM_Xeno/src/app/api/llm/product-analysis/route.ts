@@ -13,9 +13,15 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const userPrompt = body.prompt;
+  const uploadId = body.uploadId; // <-- Get uploadId from request
 
   const { userId } = token.sub ? { userId: token.sub } : { userId: token.id };
-  const orders = await Order.find({ userId }).lean();
+
+  // Filter by userId and uploadId if provided
+  const query: any = { userId };
+  if (uploadId) query.uploadId = uploadId;
+
+  const orders = await Order.find(query).lean();
 
   if (!orders.length) {
     return NextResponse.json({ error: 'No orders found' }, { status: 404 });
