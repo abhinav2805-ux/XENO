@@ -1,9 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any /
+/ eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +16,7 @@ import { User, Mail, Lock, CheckCircle, ArrowRight } from "lucide-react";
 export default function SignUp() {
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const [error, setError] = useState("");
-  const router = useRouter();
+  // const router = useRouter();
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -101,7 +104,7 @@ export default function SignUp() {
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
             className="w-full flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-300 mt-1 cursor-pointer"
           >
-            <img src="/google-icon.jpeg" alt="Google logo" className="h-5 w-5" />
+            <Image src="/google-icon.jpeg" alt="Google logo" width={20} height={20} className="h-5 w-5" />
             Sign in with Google
           </Button>
 

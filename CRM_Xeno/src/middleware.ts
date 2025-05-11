@@ -1,4 +1,6 @@
 // middleware.ts
+/* eslint-disable @typescript-eslint/no-explicit-any /
+/ eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';

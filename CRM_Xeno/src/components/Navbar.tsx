@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any /
+/ eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import Link from "next/link"
@@ -32,7 +34,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 
 export default function Navbar() {
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 

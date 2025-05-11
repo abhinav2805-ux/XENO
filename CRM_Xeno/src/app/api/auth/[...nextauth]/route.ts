@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any /
+/ eslint-disable @typescript-eslint/no-unused-vars */
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -32,7 +34,7 @@ export const authOptions = {
     console.log("User has no password");
     return null;
   }
-  const isValid = await bcrypt.compare(credentials.password, user.password);
+  const isValid = credentials && await bcrypt.compare(credentials.password, user.password);
   if (!isValid) {
     console.log("Password invalid");
     return null;

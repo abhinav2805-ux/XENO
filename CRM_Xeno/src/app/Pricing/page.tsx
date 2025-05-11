@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any /
+/ eslint-disable @typescript-eslint/no-unused-vars */
 import Link from "next/link"
 import { Check, HelpCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"

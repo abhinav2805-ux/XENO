@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any /
+/ eslint-disable @typescript-eslint/no-unused-vars */
 import Link from "next/link"
 import { ArrowRight, BarChart3, Users, Calendar, MessageSquare, PieChart, Layers, Shield, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"

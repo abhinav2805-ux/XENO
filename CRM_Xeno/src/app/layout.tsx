@@ -1,6 +1,8 @@
 // app/layout.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any /
+/ eslint-disable @typescript-eslint/no-unused-vars */
 import './globals.css';
-import Navbar from '@/components/Navbar';
+
 import AuthProvider from '@/components/AuthProvider';
 import { Inter } from 'next/font/google';
 

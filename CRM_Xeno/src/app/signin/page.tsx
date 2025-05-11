@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any /
+/ eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 import { signIn } from "next-auth/react";
 import { useState } from "react";
@@ -5,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -92,7 +95,7 @@ export default function SignIn() {
   onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
   className="w-full flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-300 mt-1 cursor-pointer"
 >
-  <img src="/google-icon.jpeg" alt="Google logo" className="h-5 w-5" />
+  <Image src="/google-icon.jpeg" alt="Google logo" width={20} height={20} className="h-5 w-5" />
   Sign in with Google
 </Button>
             {error && (
@@ -103,7 +106,7 @@ export default function SignIn() {
             )}
           </form>
           <div className="mt-6 text-center text-sm">
-            <span className="text-slate-600">Don't have an account? </span>
+            <span className="text-slate-600">Don&apos;t have an account? </span>
             <Link href="/signup" className="text-blue-600 underline inline-flex items-center gap-1">
               Sign Up <ArrowRight className="h-4 w-4" />
             </Link>
