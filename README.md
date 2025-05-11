@@ -39,7 +39,7 @@ A modern, AI-powered Customer Relationship Management (CRM) platform built with 
 
 ## Demo Video
 
-[![Watch the Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
+[[Watch the Demo]](https://drive.google.com/file/d/1qt9JolSImRleMlOlIaLtHJpAmHzV_AJN/view?usp=drive_link)
 
 ---
 
@@ -86,7 +86,8 @@ A modern, AI-powered Customer Relationship Management (CRM) platform built with 
 
 **🗃️ Data Store:** MongoDB stores customers, campaigns, and message logs.
 
-**📡 Vendor API:** Simulates message delivery and sends status updates.  
+**📡 Vendor API:** Simulates message delivery and sends status updates.
+  
 ---
 
 ## Getting Started
