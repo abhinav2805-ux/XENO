@@ -43,9 +43,7 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [csvPreview, setCsvPreview] = useState<any[]>([]);
-  const [prompt, setPrompt] = useState(
-    `Which product has the maximum sales?`
-  );
+  const [prompt, setPrompt] = useState('');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] || null);
@@ -140,6 +138,7 @@ export default function OrdersPage() {
         <label className="block font-medium mb-1">Ask about your orders:</label>
         <textarea
           value={prompt}
+          placeholder='Which product has the maximum sales?'
           onChange={e => setPrompt(e.target.value)}
           rows={5}
           className="w-full border rounded p-2 mb-2"
