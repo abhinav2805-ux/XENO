@@ -39,6 +39,16 @@ export async function POST(req: NextRequest) {
   }));
 
   await CommunicationLog.insertMany(logs);
-
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+logs.forEach(log => {
+  fetch(`${baseUrl}/api/delivery-receipt`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messageId: log.messageId,
+      status: log.status
+    })
+  }).catch(() => {}); // Ignore errors for simulation
+});
   return NextResponse.json({ message: 'Campaign sent', campaign, results: logs });
 }
