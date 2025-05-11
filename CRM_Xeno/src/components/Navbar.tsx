@@ -192,14 +192,9 @@ export default function Navbar() {
                   </Link>
                 </Button>
                 <Button variant="ghost" asChild className="text-slate-600 hover:text-slate-900">
-                  <Link href="/features">Features</Link>
+                  <Link href="/Pricing">Pricing</Link>
                 </Button>
-                <Button variant="ghost" asChild className="text-slate-600 hover:text-slate-900">
-                  <Link href="/pricing">Pricing</Link>
-                </Button>
-                <Button variant="ghost" asChild className="text-slate-600 hover:text-slate-900">
-                  <Link href="/contact">Contact</Link>
-                </Button>
+                
                 <Button variant="outline" asChild className="ml-2">
                   <Link href="/signin">Sign In</Link>
                 </Button>

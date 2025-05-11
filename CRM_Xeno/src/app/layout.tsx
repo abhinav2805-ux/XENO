@@ -5,6 +5,7 @@ import AuthProvider from '@/components/AuthProvider';
 import { Inter } from 'next/font/google';
 
 import { ReactNode } from 'react';
+import ClientLayout from '@/components/ClientLayout';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,11 +19,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <Navbar />
-          <main className="min-h-screen">{children}</main>
-          <footer className="bg-gray-100 py-6 text-center text-gray-600">
-            <p>© {new Date().getFullYear()} Xeno CRM. All rights reserved.</p>
-          </footer>
+          <ClientLayout>
+            {children}
+          </ClientLayout>
+          
         </AuthProvider>
       </body>
     </html>
