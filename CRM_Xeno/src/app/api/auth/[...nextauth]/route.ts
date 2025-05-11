@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any /
-/ eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -9,7 +9,7 @@ import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 
-export const authOptions = {
+const handler = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
@@ -23,31 +23,30 @@ export const authOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-  console.log("Authorize: checking credentials", credentials);
-  await mongoose.connect(process.env.MONGODB_URI!);
-  const user = await User.findOne({ email: credentials?.email });
-  if (!user) {
-    console.log("User not found");
-    return null;
-  }
-  if (!user.password) {
-    console.log("User has no password");
-    return null;
-  }
-  const isValid = credentials && await bcrypt.compare(credentials.password, user.password);
-  if (!isValid) {
-    console.log("Password invalid");
-    return null;
-  }
+        console.log("Authorize: checking credentials", credentials);
+        await mongoose.connect(process.env.MONGODB_URI!);
+        const user = await User.findOne({ email: credentials?.email });
+        if (!user) {
+          console.log("User not found");
+          return null;
+        }
+        if (!user.password) {
+          console.log("User has no password");
+          return null;
+        }
+        const isValid = credentials && await bcrypt.compare(credentials.password, user.password);
+        if (!isValid) {
+          console.log("Password invalid");
+          return null;
+        }
 
-  console.log("Auth successful");
-  return {
-    id: user._id.toString(),
-    email: user.email,
-    name: user.name,
-  };
-}
-
+        console.log("Auth successful");
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+        };
+      }
     }),
   ],
   session: { strategy: "jwt" as "jwt" },
@@ -58,19 +57,18 @@ export const authOptions = {
     newUser: "/dashboard",
   },
   callbacks: {
-   async session({ session, token }) {
-    if (session.user && token.sub) {
-      session.user.id = token.sub;
-    }
-    return session;
+    async session({ session, token }) {
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
+      }
+      return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // If url is relative, allow it, otherwise fallback to dashboard
+      if (url.startsWith("/")) return url;
+      return "/dashboard";
+    },
   },
-   async redirect({ url, baseUrl }) {
-    // If url is relative, allow it, otherwise fallback to dashboard
-    if (url.startsWith("/")) return url;
-    return "/dashboard";
-  },
-  },
-};
+});
 
-const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
