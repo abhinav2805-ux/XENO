@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import NextAuth from "next-auth";
+import NextAuth, { DefaultSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
@@ -8,6 +8,14 @@ import clientPromise from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
+
+declare module "next-auth" {
+  interface Session extends DefaultSession {
+    user: {
+      id: string;
+    } & DefaultSession["user"];
+  }
+}
 
 const handler = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
@@ -53,7 +61,6 @@ const handler = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/signin",
-    error: "/auth/error",
     newUser: "/dashboard",
   },
   callbacks: {
