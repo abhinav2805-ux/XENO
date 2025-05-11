@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,9 +9,20 @@ import {
   Title,
   Tooltip,
   Legend,
+  ArcElement // Add this for Pie chart
 } from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+// Register all required elements
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement, // Required for Pie chart
+  Title,
+  Tooltip,
+  Legend
+);
+
 function parseCSVPreview(csvText: string): any[] {
   const [headerLine, ...lines] = csvText.trim().split('\n');
   const headers = headerLine.split(',');
@@ -25,6 +36,7 @@ function parseCSVPreview(csvText: string): any[] {
 
 export default function OrdersPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [chartType, setChartType] = useState<'bar' | 'pie'>('bar');
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [insights, setInsights] = useState<any>(null);
@@ -140,6 +152,18 @@ export default function OrdersPage() {
           {analyzing ? 'Analyzing...' : 'Analyze Products'}
         </button>
       </div>
+      <div className="mb-2 flex items-center gap-2">
+        <label htmlFor="chartType" className="font-medium">Chart Type:</label>
+        <select
+          id="chartType"
+          value={chartType}
+          onChange={e => setChartType(e.target.value as 'bar' | 'pie')}
+          className="border rounded px-2 py-1"
+        >
+          <option value="bar">Bar Chart</option>
+          <option value="pie">Pie Chart</option>
+        </select>
+      </div>
       {error && <div className="text-red-600 mt-4">{error}</div>}
       {insights && (
         <div className="mt-6 p-4 bg-gray-50 border rounded">
@@ -200,36 +224,64 @@ export default function OrdersPage() {
           {insights.productSales && (
             <div className="mt-6">
               <div className="font-medium mb-1">Sales Chart:</div>
-              <Bar
-                data={{
-                  labels: Object.keys(insights.productSales),
-                  datasets: [
-                    {
-                      label: 'Sales Count',
-                      data: Object.values(insights.productSales),
-                      backgroundColor: Object.entries(insights.productSales).map(([product, count]) => {
-                        const max = Math.max(...Object.values(insights.productSales));
-                        const min = Math.min(...Object.values(insights.productSales));
-                        if (Number(count) === max) return 'rgba(34,197,94,0.7)'; // green for hero
-                        if (Number(count) === min) return 'rgba(239,68,68,0.7)'; // red for failed
-                        return 'rgba(59,130,246,0.7)'; // blue for normal
-                      }),
+              {chartType === 'bar' ? (
+                <Bar
+                  data={{
+                    labels: Object.keys(insights.productSales),
+                    datasets: [
+                      {
+                        label: 'Sales Count',
+                        data: Object.values(insights.productSales),
+                        backgroundColor: Object.entries(insights.productSales).map(([product, count]) => {
+                          const max = Math.max(...Object.values(insights.productSales));
+                          const min = Math.min(...Object.values(insights.productSales));
+                          if (Number(count) === max) return 'rgba(34,197,94,0.7)'; // green for hero
+                          if (Number(count) === min) return 'rgba(239,68,68,0.7)'; // red for failed
+                          return 'rgba(59,130,246,0.7)'; // blue for normal
+                        }),
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: { display: false },
+                      title: { display: false },
+                      tooltip: { enabled: true },
                     },
-                  ],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: false },
-                    title: { display: false },
-                    tooltip: { enabled: true },
-                  },
-                  scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                  },
-                }}
-                height={200}
-              />
+                    scales: {
+                      y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                    },
+                  }}
+                  height={200}
+                />
+              ) : (
+                <Pie
+                  data={{
+                    labels: Object.keys(insights.productSales),
+                    datasets: [
+                      {
+                        data: Object.values(insights.productSales),
+                        backgroundColor: Object.entries(insights.productSales).map(([product, count]) => {
+                          const max = Math.max(...Object.values(insights.productSales));
+                          const min = Math.min(...Object.values(insights.productSales));
+                          if (Number(count) === max) return 'rgba(34,197,94,0.7)'; // green for hero
+                          if (Number(count) === min) return 'rgba(239,68,68,0.7)'; // red for failed
+                          return 'rgba(59,130,246,0.7)'; // blue for normal
+                        }),
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: { display: true, position: 'bottom' },
+                      tooltip: { enabled: true },
+                    },
+                  }}
+                  height={200}
+                />
+              )}
             </div>
           )}
         </div>

@@ -22,6 +22,9 @@ export default function Navbar() {
                 <Link href="/dashboard" className="text-gray-700 hover:text-gray-900">
                   Dashboard
                 </Link>
+                <Link href="/orders" className="text-gray-700 hover:text-gray-900">
+                  orders
+                </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: '/' })}
                   className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
