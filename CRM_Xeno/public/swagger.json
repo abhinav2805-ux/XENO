@@ -1,0 +1,291 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Xeno CRM API",
+    "version": "1.0.0",
+    "description": "API documentation for Xeno CRM, a modern, AI-powered Customer Relationship Management platform."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api"
+    }
+  ],
+  "tags": [
+    { "name": "Auth" },
+    { "name": "Campaigns" },
+    { "name": "Customers" },
+    { "name": "Orders" },
+    { "name": "Stats" },
+    { "name": "LLM" }
+  ],
+  "paths": {
+    "/auth/signup": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "User signup",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "name"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User created" }
+        }
+      }
+    },
+    "/auth/[...nextauth]": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "NextAuth.js authentication endpoint",
+        "responses": {
+          "200": { "description": "Auth response" }
+        }
+      }
+    },
+   
+    "/campaigns/{id}": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "Get campaign details by ID",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Campaign details" }
+        }
+      }
+    },
+    "/campaigns/send": {
+      "post": {
+        "tags": ["Campaigns"],
+        "summary": "Send a campaign to customers",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "message": { "type": "string" },
+                  "filters": { "type": "object" },
+                  "preview": { "type": "array", "items": { "type": "object" } },
+                  "csvImportId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Campaign sent" }
+        }
+      }
+    },
+    "/campaigns/upload-csv": {
+      "post": {
+        "tags": ["Campaigns"],
+        "summary": "Upload customer CSV",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Customers uploaded" }
+        }
+      }
+    },
+    "/campaigns/preview": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "Preview campaign audience",
+        "parameters": [
+          { "in": "query", "name": "rules", "schema": { "type": "string" } },
+          { "in": "query", "name": "csvImportId", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Previewed audience" }
+        }
+      }
+    },
+    "/campaigns/history": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "Get campaign history with stats",
+        "responses": {
+          "200": { "description": "Campaign history" }
+        }
+      }
+    },
+    "/campaigns/delivery-receipt": {
+      "post": {
+        "tags": ["Campaigns"],
+        "summary": "Update delivery status for a message",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messageId": { "type": "string" },
+                  "status": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Delivery status updated" }
+        }
+      }
+    },
+    "/customers": {
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Bulk upload customers",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": { "type": "object" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Customers ingested" }
+        }
+      }
+    },
+    "/orders": {
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Upload orders CSV",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Orders ingested" }
+        }
+      }
+    },
+    "/stats": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Get dashboard statistics",
+        "responses": {
+          "200": { "description": "Stats" }
+        }
+      }
+    },
+    "/llm/suggest-message": {
+      "post": {
+        "tags": ["LLM"],
+        "summary": "AI-powered campaign message suggestion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "campaignName": { "type": "string" },
+                  "description": { "type": "string" },
+                  "audience": { "type": "string" },
+                  "userMessage": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Enhanced message" }
+        }
+      }
+    },
+    "/llm/product-analysis": {
+      "post": {
+        "tags": ["LLM"],
+        "summary": "AI-powered product/order analysis",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": { "type": "string" },
+                  "uploadId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Product analysis" }
+        }
+      }
+    },
+    "/llm/generate-filter": {
+      "post": {
+        "tags": ["LLM"],
+        "summary": "AI-powered filter generation from natural language",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": { "type": "string" },
+                  "availableFields": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Generated filter" }
+        }
+      }
+    }
+  }
+}

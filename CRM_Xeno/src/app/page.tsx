@@ -24,7 +24,10 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row justify-center gap-4">
              
               <Button asChild size="lg" variant="default" className="bg-emerald-600 hover:bg-emerald-700">
-                <Link href="/signup">Get Started</Link>
+                <Link href="/dashboard">Get Started</Link>
+              </Button>
+              <Button asChild size="lg" variant="default" className="bg-blue-600 hover:bg-blue-700">
+                <Link href="/swagger">Swagger Documentation</Link>
               </Button>
             </div>
           </div>

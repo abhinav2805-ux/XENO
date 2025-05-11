@@ -1,0 +1,11 @@
+Name,email,phone,Total Purchase,City,Signup Date,Loyalty Status
+Alice Johnson,alice@example.com,9876543210,1250,New York,2022-01-15,Gold
+Bob Smith,bob@example.com,9123456780,820,Los Angeles,2023-05-22,Silver
+Carol Lee,carol@example.com,9988776655,4500,Chicago,2021-11-03,Platinum
+David Kim,david.kim@example.com,9765432109,230,San Francisco,2024-01-10,Bronze
+Emma Watson,emma@example.com,9001122334,780,Seattle,2023-07-29,Silver
+Frank Moore,frank@example.com,9112233445,1600,Miami,2022-09-17,Gold
+Grace Lee,grace@example.com,9887766554,3050,Dallas,2021-12-05,Platinum
+Harry James,harry@example.com,9990008887,125,Boston,2024-03-03,Bronze
+Ivy Thomas,ivy@example.com,9223344556,985,Denver,2023-02-20,Silver
+Jack Ryan,jack@example.com,9332211009,2170,Austin,2022-06-11,Gold
